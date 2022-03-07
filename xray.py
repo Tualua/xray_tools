@@ -1,5 +1,4 @@
 from enum import Enum
-import json
 import jsonpickle
 
 
@@ -52,6 +51,10 @@ class XrayCertificate:
     certificateFile: str
     keyFile: str
 
+    def __init__(self, cert_path: str, key_path: str):
+        self.certificateFile = cert_path
+        self.keyFile = key_path
+
 
 class XrayProtocolSettings:
     pass
@@ -61,10 +64,24 @@ class XrayXtlsSettings(XrayProtocolSettings):
     alpn: list[XrayAlpn]
     certificates: list[XrayCertificate]
 
+    def __init__(
+            self, alpn: list[XrayAlpn], certificates: list[XrayCertificate]):
+
+        self.alpn = alpn
+        self.certificates = certificates
+
+    def add_cert(self, cert_path: str, key_path: str):
+        cert = XrayCertificate(cert_path, key_path)
+        self.certificates.append(cert)
+
 
 class XrayWsSettings(XrayProtocolSettings):
     acceptProxyProtocol: bool
     path: str
+
+    def __init__(self, accept_proxy_protocol: bool, path: str):
+        self.acceptProxyProtocol = accept_proxy_protocol
+        self.path = path
 
 
 class XrayClient:
@@ -79,7 +96,7 @@ class XrayClient:
         self.id = id
         self.name = email
         self.level = level
-        if aead:
+        if not aead:
             self.alterid = 64
 
         if flow is not None:
@@ -98,10 +115,10 @@ class XrayInboundSettings:
 
     def add_client(
             self, id: str, email: str, flow: XrayFlow = None,
-            level: int = 1):
+            level: int = 1, aead: bool = False):
 
         self.clients.append(
-            XrayClient(id, email, flow, level)
+            XrayClient(id, email, flow, level, aead)
         )
 
     def add_fallback(self, dest: int, path: str = "", xver: int = 0):
@@ -150,7 +167,8 @@ class XrayInbound:
     def __init__(
             self, port: int, protocol: XrayProtocol,
             settings: XrayInboundSettings,
-            stream_settings: XrayInboundStreamSettings, listen: str = ""):
+            stream_settings: XrayInboundStreamSettings, listen: str = "",
+            fallbacks: list[XrayFallback] = []):
 
         self.port = port
         self.protocol = protocol
@@ -159,6 +177,9 @@ class XrayInbound:
         self.settings = settings
         self.streamSettings = stream_settings
 
+        if len(fallbacks) > 0:
+            self.settings.fallbacks = fallbacks
+
     def set_stream_network(self, network: XrayNetwork):
         self.streamSettings.network = network
 
@@ -166,8 +187,22 @@ class XrayInbound:
         self.streamSettings.security = security
 
         if security == XraySecurity.XTLS:
-            
+            self.streamSettings.xtlsSettings = XrayXtlsSettings(
+                alpn=[XrayAlpn.HTTP11], certificates=[])
 
+    def add_client(self, email: str, id: str):
+        if self.streamSettings.security == XraySecurity.XTLS:
+            self.settings.add_client(
+                id=id,
+                email=email,
+                flow=XrayFlow.XTLSRPRXDIRECT,
+                aead=True
+            )
+        else:
+            self.settings.add_client(
+                id=id,
+                email=email
+            )
 
 
 class XrayOutbound:
@@ -189,16 +224,41 @@ class XrayConfig:
         self.inbounds = []
         self.outbounds = []
 
-    def add_inbound(self, inbound: XrayInbound):
-        self.inbounds.append(inbound)
+    def add_inbound(
+            self, port: int, protocol: XrayProtocol,
+            network: XrayNetwork, security: XraySecurity,
+            settings: XrayProtocolSettings,
+            fallbacks: list[XrayFallback] = [],
+            listen: str = ""):
+
+        self.inbounds.append(
+            XrayInbound(
+                port=port,
+                protocol=protocol,
+                settings=XrayInboundSettings(
+                    decryption="none"
+                ),
+                stream_settings=XrayInboundStreamSettings(
+                    network=network,
+                    security=security,
+                    settings=settings
+                ),
+                fallbacks=fallbacks,
+                listen=listen
+            )
+        )
 
     def add_outbound(self, protocol: XrayProtocol):
         self.outbounds.append(XrayOutbound(XrayProtocol.FREEDOM))
 
-    def toJSON(self):
-        return json.dumps(
-            self, default=lambda o: o.__dict__,
-            sort_keys=False, indent=4)
+    def add_client(self, id: str, email: str):
+        for inb in self.inbounds:
+            inb.add_client(email, id)
+
+
+class HandlerXrayLogLevel(jsonpickle.handlers.BaseHandler):
+    def flatten(self, obj: XrayLogLevel, data):
+        return obj.value
 
 
 class HandlerXrayProtocol(jsonpickle.handlers.BaseHandler):
@@ -211,5 +271,24 @@ class HandlerXrayFlow(jsonpickle.handlers.BaseHandler):
         return obj.value
 
 
+class HandlerXrayNetwork(jsonpickle.handlers.BaseHandler):
+    def flatten(self, obj: XrayNetwork, data):
+        return obj.value
+
+
+class HandlerXraySecurity(jsonpickle.handlers.BaseHandler):
+    def flatten(self, obj: XraySecurity, data):
+        return obj.value
+
+
+class HandlerXrayAlpn(jsonpickle.handlers.BaseHandler):
+    def flatten(self, obj: XrayAlpn, data):
+        return obj.value
+
+
 jsonpickle.handlers.registry.register(XrayProtocol, HandlerXrayProtocol)
 jsonpickle.handlers.registry.register(XrayFlow, HandlerXrayFlow)
+jsonpickle.handlers.registry.register(XrayNetwork, HandlerXrayNetwork)
+jsonpickle.handlers.registry.register(XraySecurity, HandlerXraySecurity)
+jsonpickle.handlers.registry.register(XrayAlpn, HandlerXrayAlpn)
+jsonpickle.handlers.registry.register(XrayLogLevel, HandlerXrayLogLevel)

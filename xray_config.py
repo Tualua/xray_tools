@@ -1,7 +1,7 @@
-import json
+import argparse
+import xray as X
 import jsonpickle
-
-import xray
+import json
 
 
 def get_users(file):
@@ -11,26 +11,64 @@ def get_users(file):
     return users
 
 
-users = get_users("users.json")
+def main(args):
+    users = get_users(args.users)
 
-x_log = xray.XrayLog(
-    "warning", "/var/log/xray/error.log",
-    "/var/log/xray/access.log")
+    config = X.XrayConfig(
+        log=X.XrayLog(
+            loglevel=X.XrayLogLevel.Warning,
+            path_accesslog="/var/log/xray/acccess.log",
+            path_errorlog="/var/log/xray/error.log"
+        )
+    )
 
-in1set = xray.XrayInboundSettings("none")
+    config.add_inbound(
+        port=443,
+        protocol=X.XrayProtocol.VLESS,
+        network=X.XrayNetwork.TCP,
+        security=X.XraySecurity.XTLS,
+        settings=X.XrayXtlsSettings(
+            alpn=[X.XrayAlpn.HTTP11],
+            certificates=[X.XrayCertificate(
+                f"/etc/letsencrypt/live/{args.fqdn}/fullchain.pem",
+                f"/etc/letsencrypt/live/{args.fqdn}/privkey.pem"
+            )]
+        ),
+        fallbacks=[
+            X.XrayFallback(dest=80),
+            X.XrayFallback(dest=1234, path="/ray", xver=1)
+        ]
+    )
 
-for user in users["clients"]:
-    in1set.add_client(user["id"], user["email"], xray.XrayFlow.XTLSRPRXDIRECT)
+    config.add_inbound(
+        port=1234,
+        protocol=X.XrayProtocol.VMESS,
+        network=X.XrayNetwork.WS,
+        security=X.XraySecurity.NONE,
+        settings=X.XrayWsSettings(
+            accept_proxy_protocol=True,
+            path="/ray"
+        ),
+        listen="127.0.0.1"
+    )
 
-in1set.add_fallback(80)
-in1set.add_fallback(1234, "/websocket", 1)
+    config.add_outbound(X.XrayProtocol.FREEDOM)
 
-config = xray.XrayConfig(x_log)
-config.add_inbound(
-    xray.XrayInbound(443, xray.XrayProtocol.VLESS, in1set, None))
-config.add_outbound(xray.XrayProtocol.FREEDOM)
+    for user in users["clients"]:
+        config.add_client(user["id"], user["email"])
 
-out = open("test.json", "w")
+    out = open(f"{args.fqdn}.json", "w")
+    out.write(jsonpickle.encode(config, unpicklable=False, indent=4))
+    out.close()
 
-out.write(jsonpickle.encode(config, unpicklable=False, indent=4))
-out.close()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Xray Config Generator"
+    )
+    parser.add_argument(
+        "--fqdn", type=str, action="store", help="FQDN of Xray server")
+    parser.add_argument(
+        "--users", type=str, action="store", help="User list in JSON")
+    args = parser.parse_args()
+    main(args)

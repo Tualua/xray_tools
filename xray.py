@@ -37,7 +37,7 @@ class XrayAlpn(Enum):
 class XrayFallback:
     dest: int
 
-    def __init__(self, dest: int, path: str = "", xver: int = 0):
+    def __init__(self, dest: int, path: str = "", xver: int = 1):
         self.dest = dest
 
         if path:
@@ -91,16 +91,20 @@ class XrayClient:
 
     def __init__(
             self, id: str, email: str,  flow: XrayFlow,
+            valid_till: str = "",
             level=1, aead=False):
 
         self.id = id
-        self.name = email
+        self.email = email
         self.level = level
         if not aead:
             self.alterid = 64
 
         if flow is not None:
             self.flow = flow
+
+        if valid_till:
+            self.valid_till = valid_till
 
 
 class XrayInboundSettings:
@@ -115,10 +119,14 @@ class XrayInboundSettings:
 
     def add_client(
             self, id: str, email: str, flow: XrayFlow = None,
+            valid_till: str = "",
             level: int = 1, aead: bool = False):
 
         self.clients.append(
-            XrayClient(id, email, flow, level, aead)
+            XrayClient(
+                id=id, email=email,
+                flow=flow, valid_till=valid_till,
+                level=level, aead=aead)
         )
 
     def add_fallback(self, dest: int, path: str = "", xver: int = 0):
@@ -190,18 +198,20 @@ class XrayInbound:
             self.streamSettings.xtlsSettings = XrayXtlsSettings(
                 alpn=[XrayAlpn.HTTP11], certificates=[])
 
-    def add_client(self, email: str, id: str):
+    def add_client(self, email: str, id: str, valid_till: str = ""):
         if self.streamSettings.security == XraySecurity.XTLS:
             self.settings.add_client(
                 id=id,
                 email=email,
                 flow=XrayFlow.XTLSRPRXDIRECT,
+                valid_till=valid_till,
                 aead=True
             )
         else:
             self.settings.add_client(
                 id=id,
-                email=email
+                email=email,
+                valid_till=valid_till
             )
 
 
@@ -251,9 +261,9 @@ class XrayConfig:
     def add_outbound(self, protocol: XrayProtocol):
         self.outbounds.append(XrayOutbound(XrayProtocol.FREEDOM))
 
-    def add_client(self, id: str, email: str):
+    def add_client(self, id: str, email: str, valid_till: str = ""):
         for inb in self.inbounds:
-            inb.add_client(email, id)
+            inb.add_client(email=email, id=id, valid_till=valid_till)
 
 
 class HandlerXrayLogLevel(jsonpickle.handlers.BaseHandler):

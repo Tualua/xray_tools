@@ -2,12 +2,22 @@ import argparse
 import xray as X
 import jsonpickle
 import json
+from datetime import datetime as DT
+from dateutil.relativedelta import relativedelta
 
 
 def get_users(file):
     users_file = open(file)
     users = json.loads(users_file.read())
     users_file.close
+
+    for user in users["clients"]:
+        if "valid_till" in user.keys():
+            valid = user["valid_till"]
+            valid_date = DT.strptime(valid, "%Y%m") + relativedelta(months=1)
+            if DT.now() > valid_date:
+                users["clients"].remove(user)
+                print("User {} expired".format(user["email"]))
     return users
 
 
@@ -17,7 +27,7 @@ def main(args):
     config = X.XrayConfig(
         log=X.XrayLog(
             loglevel=X.XrayLogLevel.Warning,
-            path_accesslog="/var/log/xray/acccess.log",
+            path_accesslog="/var/log/xray/access.log",
             path_errorlog="/var/log/xray/error.log"
         )
     )
@@ -36,7 +46,7 @@ def main(args):
         ),
         fallbacks=[
             X.XrayFallback(dest=80),
-            X.XrayFallback(dest=1234, path="/ray", xver=1)
+            X.XrayFallback(dest=1234, path="/ray")
         ]
     )
 
@@ -55,10 +65,14 @@ def main(args):
     config.add_outbound(X.XrayProtocol.FREEDOM)
 
     for user in users["clients"]:
-        config.add_client(user["id"], user["email"])
+        if "valid_till" in user.keys():
+            config.add_client(user["id"], user["email"], user["valid_till"])
+        else:
+            config.add_client(user["id"], user["email"])
 
-    out = open(f"{args.fqdn}.json", "w")
-    out.write(jsonpickle.encode(config, unpicklable=False, indent=4))
+    out = open(f"{args.fqdn}.json", "w", newline='\n')
+    out.write(jsonpickle.encode(
+        config, unpicklable=False, indent=4))
     out.close()
 
 

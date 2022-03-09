@@ -45,7 +45,7 @@ def main(args):
             sftp_client.close()
             print("Restarting xray: ", hostname)
             _, stdout, stderr = ssh_client.exec_command(server["reload_cmd"])
-            print(stdout)
+            print(stdout.read())
             if stderr:
                 print("ERROR: ", stderr)
         finally:
@@ -60,3 +60,4 @@ if __name__ == "__main__":
         "--user", type=str, action="store", help="User list in JSON")
     args = parser.parse_args()
     main(args)
+    paramiko.channel.Channel

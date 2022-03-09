@@ -56,7 +56,7 @@ def main(args):
                 )]
             ),
             fallbacks=[
-                X.XrayFallback(dest=80),
+                X.XrayFallback(dest=80, xver=0),
                 X.XrayFallback(dest=1234, path="/ray")
             ]
         )

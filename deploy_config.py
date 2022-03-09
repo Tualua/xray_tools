@@ -60,4 +60,3 @@ if __name__ == "__main__":
         "--user", type=str, action="store", help="User list in JSON")
     args = parser.parse_args()
     main(args)
-    paramiko.channel.Channel

@@ -45,9 +45,10 @@ def main(args):
             sftp_client.close()
             print("Restarting xray: ", hostname)
             _, stdout, stderr = ssh_client.exec_command(server["reload_cmd"])
-            print(stdout.read())
-            if stderr:
-                print("ERROR: ", stderr)
+            if stdout.read():
+                print(stdout.read().decode("utf-8"))
+            if stderr.read():
+                print("ERROR: ", stderr.read().decode("utf-8"))
         finally:
             ssh_client.close()
 

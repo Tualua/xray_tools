@@ -37,11 +37,17 @@ def main(args):
         except Exception as e:
             print(e)
         else:
+            print("Connected: ", hostname)
             sftp_client = ssh_client.open_sftp()
             local_config = "{}.json".format(server["name"])
+            print("Sending config: ", hostname)
             sftp_client.put(local_config, server["conf_path"])
             sftp_client.close()
-            ssh_client.exec_command(server["reload_cmd"])
+            print("Restarting xray: ", hostname)
+            _, stdout, stderr = ssh_client.exec_command(server["reload_cmd"])
+            print(stdout)
+            if stderr:
+                print("ERROR: ", stderr)
         finally:
             ssh_client.close()
 

@@ -2,6 +2,8 @@ from base64 import decodebytes
 import paramiko
 import yaml
 import argparse
+import sys
+import os
 
 
 def get_servers(file):
@@ -12,6 +14,7 @@ def get_servers(file):
 
 
 def main(args):
+    deploy_failed = False
     servers = get_servers("servers.yaml")
     ssh_client = paramiko.SSHClient()
     pkey = paramiko.agent.Agent().get_keys()[0]
@@ -35,6 +38,7 @@ def main(args):
                 username=args.user,
                 pkey=pkey)
         except Exception as e:
+            deploy_failed = True
             print(e)
         else:
             print("Connected: ", hostname)
@@ -49,8 +53,13 @@ def main(args):
                 print(stdout.read().decode("utf-8"))
             if stderr.read():
                 print("ERROR: ", stderr.read().decode("utf-8"))
+                deploy_failed = True
         finally:
             ssh_client.close()
+    if deploy_failed:
+        sys.exit(1)
+    else:
+        sys.exit(os.EX_OK)
 
 
 if __name__ == "__main__":

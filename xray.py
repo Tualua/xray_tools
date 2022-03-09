@@ -199,20 +199,29 @@ class XrayInbound:
                 alpn=[XrayAlpn.HTTP11], certificates=[])
 
     def add_client(self, email: str, id: str, valid_till: str = ""):
-        if self.streamSettings.security == XraySecurity.XTLS:
-            self.settings.add_client(
-                id=id,
-                email=email,
-                flow=XrayFlow.XTLSRPRXDIRECT,
-                valid_till=valid_till,
-                aead=True
-            )
-        else:
-            self.settings.add_client(
-                id=id,
-                email=email,
-                valid_till=valid_till
-            )
+        if self.protocol == XrayProtocol.VLESS:
+            if self.streamSettings.security == XraySecurity.XTLS:
+                self.settings.add_client(
+                    id=id,
+                    email=email,
+                    flow=XrayFlow.XTLSRPRXDIRECT,
+                    valid_till=valid_till,
+                    aead=True
+                )
+            elif self.streamSettings.network == XrayNetwork.WS:
+                self.settings.add_client(
+                    id=id,
+                    email=email,
+                    valid_till=valid_till,
+                    aead=True
+                )
+        elif self.protocol == XrayProtocol.VMESS:
+            if self.streamSettings.network == XrayNetwork.WS:
+                self.settings.add_client(
+                    id=id,
+                    email=email,
+                    valid_till=valid_till
+                )
 
 
 class XrayOutbound:

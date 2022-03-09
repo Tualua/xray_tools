@@ -40,7 +40,7 @@ def main(args):
                 path_errorlog="/var/log/xray/error.log"
             )
         )
-
+        # Main TCP-XTLS
         config.add_inbound(
             port=443,
             protocol=X.XrayProtocol.VLESS,
@@ -57,10 +57,11 @@ def main(args):
             ),
             fallbacks=[
                 X.XrayFallback(dest=80, xver=0),
-                X.XrayFallback(dest=1234, path="/ray")
+                X.XrayFallback(dest=1234, path="/ray"),
+                X.XrayFallback(dest=2345, path="/rayless")
             ]
         )
-
+        # Vmess Websocket Fallback
         config.add_inbound(
             port=1234,
             protocol=X.XrayProtocol.VMESS,
@@ -69,6 +70,18 @@ def main(args):
             settings=X.XrayWsSettings(
                 accept_proxy_protocol=True,
                 path="/ray"
+            ),
+            listen="127.0.0.1"
+        )
+        # VLESS Websocket Fallback
+        config.add_inbound(
+            port=2345,
+            protocol=X.XrayProtocol.VLESS,
+            network=X.XrayNetwork.WS,
+            security=X.XraySecurity.NONE,
+            settings=X.XrayWsSettings(
+                accept_proxy_protocol=True,
+                path="/rayless"
             ),
             listen="127.0.0.1"
         )

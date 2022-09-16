@@ -2,34 +2,62 @@ from enum import Enum
 import jsonpickle
 
 
-class XrayLogLevel(Enum):
+class XrayEnum(Enum):
+    pass
+
+
+class XrayLogLevel(XrayEnum):
     Info = "info"
     Warning = "warning"
     Debug = "debug"
 
 
-class XrayFlow(Enum):
+class XrayApiServices(XrayEnum):
+    Handler = "HandlerService"
+    Logger = "LoggerService"
+    Stats = "StatsService"
+
+
+class XrayApi:
+    tag: str
+    services: list[XrayApiServices]
+
+    def __init__(self, tag: str, services: list[XrayApiServices]):
+        self.tag = tag
+        self.services = services
+
+
+class XrayPolicyLevel:
+    statsUserUplink: bool = True
+    statsUserDownlink: bool = True
+
+
+class XrayPolicy:
+    levels: dict
+
+
+class XrayFlow(XrayEnum):
     XTLSRPRXDIRECT = "xtls-rprx-direct"
 
 
-class XrayProtocol(Enum):
+class XrayProtocol(XrayEnum):
     VLESS = "vless"
     VMESS = "vmess"
     FREEDOM = "freedom"
 
 
-class XrayNetwork(Enum):
+class XrayNetwork(XrayEnum):
     TCP = "tcp"
     WS = "ws"
 
 
-class XraySecurity(Enum):
+class XraySecurity(XrayEnum):
     TLS = "tls"
     XTLS = "xtls"
     NONE = "none"
 
 
-class XrayAlpn(Enum):
+class XrayAlpn(XrayEnum):
     HTTP11 = "http/1.1"
     H2 = "h2"
 
@@ -267,6 +295,20 @@ class XrayConfig:
             )
         )
 
+    def enable_stats(self):
+        self.stats = {}
+
+    def enable_api(self, tag: str, services: list[XrayApiServices]):
+        self.api = XrayApi(
+            tag=tag,
+            services=services
+        )
+
+    def add_policy(self, level: str, policy: XrayPolicyLevel):
+        if not self.policy:
+            self.policy = {}
+            policy[level] = XrayPolicyLevel
+
     def add_outbound(self, protocol: XrayProtocol):
         self.outbounds.append(XrayOutbound(XrayProtocol.FREEDOM))
 
@@ -275,39 +317,9 @@ class XrayConfig:
             inb.add_client(email=email, id=id, valid_till=valid_till)
 
 
-class HandlerXrayLogLevel(jsonpickle.handlers.BaseHandler):
-    def flatten(self, obj: XrayLogLevel, data):
+class HandlerXrayEnum(jsonpickle.handlers.BaseHandler):
+    def flatten(self, obj: XrayEnum, data):
         return obj.value
 
 
-class HandlerXrayProtocol(jsonpickle.handlers.BaseHandler):
-    def flatten(self, obj: XrayProtocol, data):
-        return obj.value
-
-
-class HandlerXrayFlow(jsonpickle.handlers.BaseHandler):
-    def flatten(self, obj: XrayFlow, data):
-        return obj.value
-
-
-class HandlerXrayNetwork(jsonpickle.handlers.BaseHandler):
-    def flatten(self, obj: XrayNetwork, data):
-        return obj.value
-
-
-class HandlerXraySecurity(jsonpickle.handlers.BaseHandler):
-    def flatten(self, obj: XraySecurity, data):
-        return obj.value
-
-
-class HandlerXrayAlpn(jsonpickle.handlers.BaseHandler):
-    def flatten(self, obj: XrayAlpn, data):
-        return obj.value
-
-
-jsonpickle.handlers.registry.register(XrayProtocol, HandlerXrayProtocol)
-jsonpickle.handlers.registry.register(XrayFlow, HandlerXrayFlow)
-jsonpickle.handlers.registry.register(XrayNetwork, HandlerXrayNetwork)
-jsonpickle.handlers.registry.register(XraySecurity, HandlerXraySecurity)
-jsonpickle.handlers.registry.register(XrayAlpn, HandlerXrayAlpn)
-jsonpickle.handlers.registry.register(XrayLogLevel, HandlerXrayLogLevel)
+jsonpickle.handlers.registry.register(XrayEnum, HandlerXrayEnum)

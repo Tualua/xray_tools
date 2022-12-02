@@ -92,7 +92,9 @@ else:
     sftp_client = ssh_client.open_sftp()
     for usr in users:
         sr = ""
-        sftp_client.mkdir(os.path.join(subs_server["path"], usr["id"]), 644)
+        subs_usr_dir = os.path.join(subs_server["path"], usr["id"])
+        print(f"Create {subs_usr_dir}")
+        sftp_client.mkdir(subs_usr_dir, 644)
         subs_path = os.path.join(subs_server["path"], usr["id"], "rocket.txt")
         print(f"Writing {subs_path}")
         sftp_file = sftp_client.file(

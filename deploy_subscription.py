@@ -121,10 +121,10 @@ else:
         sub_b64 = f"sub://{sub_srv}?udp=1#CET"
         qr = pyqrcode.create(sub_b64, error='H')
         qr.png(
-                            "{}/SR-{}.png".format(
-                                "/tmp", usr["email"]),
-                            scale=5
-                        )
+                "{}/SR-{}.png".format(
+                    "qrcodes", usr["email"]),
+                scale=5
+        )
     sftp_client.close()
 finally:
     ssh_client.close()

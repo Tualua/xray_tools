@@ -93,8 +93,11 @@ else:
     for usr in users:
         sr = ""
         subs_usr_dir = os.path.join(subs_server["path"], usr["id"])
-        print(f"Create {subs_usr_dir}")
-        sftp_client.mkdir(subs_usr_dir, 644)
+        try:
+            sftp_client.stat(subs_usr_dir)
+        except IOError:
+            print(f"Create {subs_usr_dir}")
+            sftp_client.mkdir(subs_usr_dir, 436)
         subs_path = os.path.join(subs_server["path"], usr["id"], "rocket.txt")
         print(f"Writing {subs_path}")
         sftp_file = sftp_client.file(

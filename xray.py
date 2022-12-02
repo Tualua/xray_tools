@@ -15,6 +15,7 @@ class XrayFlow(Enum):
 class XrayProtocol(Enum):
     VLESS = "vless"
     VMESS = "vmess"
+    TROJAN = "trojan"
     FREEDOM = "freedom"
 
 
@@ -221,6 +222,15 @@ class XrayInbound:
                     id=id,
                     email=email,
                     valid_till=valid_till
+                )
+        elif self.protocol == XrayProtocol.TROJAN:
+            if self.streamSettings.security == XraySecurity.XTLS:
+                self.settings.add_client(
+                    id=id,
+                    email=email,
+                    flow=XrayFlow.XTLSRPRXDIRECT,
+                    valid_till=valid_till,
+                    aead=True
                 )
 
 

@@ -47,7 +47,7 @@ def main(args):
             network=X.XrayNetwork.TCP,
             security=X.XraySecurity.XTLS,
             settings=X.XrayXtlsSettings(
-                alpn=[X.XrayAlpn.HTTP11],
+                alpn=[X.XrayAlpn.H2, X.XrayAlpn.HTTP11],
                 certificates=[X.XrayCertificate(
                     "/etc/letsencrypt/live/{}/fullchain.pem".format(
                         server["name"]),
@@ -85,7 +85,27 @@ def main(args):
             ),
             listen="127.0.0.1"
         )
-
+        # Trojan
+        config.add_inbound(
+            port=8443,
+            protocol=X.XrayProtocol.TROJAN,
+            network=X.XrayNetwork.TCP,
+            security=X.XraySecurity.XTLS,
+            settings=X.XrayXtlsSettings(
+                alpn=[X.XrayAlpn.H2, X.XrayAlpn.HTTP11],
+                certificates=[X.XrayCertificate(
+                    "/etc/letsencrypt/live/{}/fullchain.pem".format(
+                        server["name"]),
+                    "/etc/letsencrypt/live/{}/privkey.pem".format(
+                        server["name"])
+                )]
+            ),
+            fallbacks=[
+                X.XrayFallback(dest=80, xver=0),
+                X.XrayFallback(dest=1234, path="/ray"),
+                X.XrayFallback(dest=2345, path="/rayless")
+            ]
+        )
         config.add_outbound(X.XrayProtocol.FREEDOM)
 
         for user in users["clients"]:

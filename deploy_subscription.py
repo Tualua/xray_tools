@@ -110,7 +110,6 @@ else:
             sr.encode('ascii')).decode('ascii').replace('=', '')
         sftp_file.write(sr_b64)
         sftp_file.close()
-        sftp_client.close()
 
         sub_srv = base64.b64encode(
             "https://{}/{}/rocket.txt".format(
@@ -123,6 +122,7 @@ else:
                                 "/tmp", usr["email"]),
                             scale=5
                         )
+    sftp_client.close()
 finally:
     ssh_client.close()
 

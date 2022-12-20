@@ -12,10 +12,10 @@ def get_servers(file):
     servers_file = open(file)
     servers = yaml.load(servers_file.read(), Loader=yaml.SafeLoader)
     servers_file.close()
-    enabled_servers = []
-    for server in servers["servers"]:
-        if server["enabled"]:
-            enabled_servers.append(server)
+    enabled_servers = {}
+    for server in servers["all"]["hosts"]["servers"]:
+        if servers[server]["enabled"]:
+            enabled_servers[server] = servers[server]
     return enabled_servers
 
 
@@ -63,7 +63,7 @@ def get_xray_url(cl_type, proto, id, server, port):
 
 deploy_failed = False
 subs_server = get_subs_server("sub.yaml")
-servers = get_servers("servers.yaml")
+servers = get_servers("servers_ansible.yaml")
 users = get_users("users.json")
 ssh_client = paramiko.SSHClient()
 pkey = paramiko.agent.Agent().get_keys()[0]
@@ -107,12 +107,12 @@ else:
         )
         for server in servers:
             sr_url = get_shadowrocket_url(
-                "vless", usr["id"], server["name"], server["access_port"], server["description"])
+                "vless", usr["id"], server, servers[server]["access_port"], servers[server]["description"])
             sr = sr+"\n"+sr_url
-            if len(server["alias"]) > 0:
-                for alias in server["alias"]:
+            if len(servers[server]["alias"]) > 0:
+                for alias in servers[server]["alias"]:
                     sr_url = get_shadowrocket_url(
-                        "vless", usr["id"], alias, server["access_port"], server["description"])
+                        "vless", usr["id"], alias, servers[server]["access_port"], servers[server]["description"])
                     sr = sr+"\n"+sr_url 
         sr_b64 = base64.b64encode(
             sr.encode('ascii')).decode('ascii').replace('=', '')

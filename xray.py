@@ -87,15 +87,19 @@ class XrayWsSettings(XrayProtocolSettings):
 
 class XrayClient:
     id: str
+    password: str
     email: str
     level: int
 
     def __init__(
             self, id: str, email: str,  flow: XrayFlow,
             valid_till: str = "",
-            level=1, aead=False):
+            level=1, aead=False, password=False):
 
-        self.id = id
+        if password:
+            self.password = id
+        else:
+            self.id = id
         self.email = email
         self.level = level
         if not aead:
@@ -121,14 +125,22 @@ class XrayInboundSettings:
     def add_client(
             self, id: str, email: str, flow: XrayFlow = None,
             valid_till: str = "",
-            level: int = 1, aead: bool = False):
+            level: int = 1, aead: bool = False, password: bool = False):
 
-        self.clients.append(
+        if password:
+            self.clients.append(
             XrayClient(
                 id=id, email=email,
                 flow=flow, valid_till=valid_till,
-                level=level, aead=aead)
-        )
+                level=level, aead=aead, password=password)
+            )
+        else:
+            self.clients.append(
+                XrayClient(
+                    id=id, email=email,
+                    flow=flow, valid_till=valid_till,
+                    level=level, aead=aead)
+            )
 
     def add_fallback(self, dest: int, path: str = "", xver: int = 0):
         self.fallbacks.append(XrayFallback(dest, path, xver))
@@ -230,7 +242,7 @@ class XrayInbound:
                     email=email,
                     flow=XrayFlow.XTLSRPRXDIRECT,
                     valid_till=valid_till,
-                    aead=True
+                    aead=True, password=True
                 )
 
 

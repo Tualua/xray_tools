@@ -26,12 +26,12 @@ def get_servers(file):
     servers_file = open(file)
     servers = yaml.load(servers_file.read(), Loader=yaml.SafeLoader)
     servers_file.close()
-    return servers["servers"]
+    return servers["all"]["hosts"]
 
 
 def main(args):
     users = get_users(args.users)
-    servers = get_servers("servers.yaml")
+    servers = get_servers("servers_ansible.yaml")
     for server in servers:
         config = X.XrayConfig(
             log=X.XrayLog(
@@ -42,7 +42,7 @@ def main(args):
         )
         # Main TCP-XTLS
         config.add_inbound(
-            port=443,
+            port=servers[server]["vmess_port"],
             protocol=X.XrayProtocol.VLESS,
             network=X.XrayNetwork.TCP,
             security=X.XraySecurity.XTLS,
@@ -50,9 +50,9 @@ def main(args):
                 alpn=[X.XrayAlpn.H2, X.XrayAlpn.HTTP11],
                 certificates=[X.XrayCertificate(
                     "/etc/letsencrypt/live/{}/fullchain.pem".format(
-                        server["name"]),
+                        server),
                     "/etc/letsencrypt/live/{}/privkey.pem".format(
-                        server["name"])
+                        server)
                 )]
             ),
             fallbacks=[
@@ -87,7 +87,7 @@ def main(args):
         )
         # Trojan
         config.add_inbound(
-            port=8443,
+            port=servers[server]["trojan_port"],
             protocol=X.XrayProtocol.TROJAN,
             network=X.XrayNetwork.TCP,
             security=X.XraySecurity.XTLS,
@@ -95,9 +95,9 @@ def main(args):
                 alpn=[X.XrayAlpn.H2, X.XrayAlpn.HTTP11],
                 certificates=[X.XrayCertificate(
                     "/etc/letsencrypt/live/{}/fullchain.pem".format(
-                        server["name"]),
+                        server),
                     "/etc/letsencrypt/live/{}/privkey.pem".format(
-                        server["name"])
+                        server)
                 )]
             ),
             fallbacks=[
@@ -115,7 +115,7 @@ def main(args):
             else:
                 config.add_client(user["id"], user["email"])
 
-        out = open("{}.json".format(server["name"]), "w", newline='\n')
+        out = open("{}.json".format(server), "w", newline='\n')
         out.write(jsonpickle.encode(
             config, unpicklable=False, indent=4))
         out.close()

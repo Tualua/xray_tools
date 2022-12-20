@@ -107,8 +107,13 @@ else:
         )
         for server in servers:
             sr_url = get_shadowrocket_url(
-                "vless", usr["id"], server["name"], 443, server["description"])
+                "vless", usr["id"], server["name"], server["access_port"], server["description"])
             sr = sr+"\n"+sr_url
+            if len(server["alias"]) > 0:
+                for alias in server["alias"]:
+                    sr_url = get_shadowrocket_url(
+                        "vless", usr["id"], alias, server["access_port"], server["description"])
+                    sr = sr+"\n"+sr_url 
         sr_b64 = base64.b64encode(
             sr.encode('ascii')).decode('ascii').replace('=', '')
         sftp_file.write(sr_b64)

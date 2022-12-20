@@ -37,7 +37,7 @@ def main(args):
         print("Connecting to ", hostname)
         try:
             ssh_client.connect(
-                hostname=servers[server]["name"],
+                hostname=server,
                 port=servers[server]["ansible_port"],
                 username=args.user,
                 pkey=pkey)

@@ -13,7 +13,7 @@ def get_servers(file):
     servers = yaml.load(servers_file.read(), Loader=yaml.SafeLoader)
     servers_file.close()
     enabled_servers = {}
-    for server in servers["all"]["hosts"]["servers"]:
+    for server in servers["all"]["hosts"]:
         if servers[server]["enabled"]:
             enabled_servers[server] = servers[server]
     return enabled_servers

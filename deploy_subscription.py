@@ -14,8 +14,8 @@ def get_servers(file):
     servers_file.close()
     enabled_servers = {}
     for server in servers["all"]["hosts"]:
-        if servers[server]["enabled"]:
-            enabled_servers[server] = servers[server]
+        if servers["all"]["hosts"][server]["enabled"]:
+            enabled_servers[server] = servers["all"]["hosts"][server]
     return enabled_servers
 
 

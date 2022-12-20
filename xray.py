@@ -129,11 +129,11 @@ class XrayInboundSettings:
 
         if password:
             self.clients.append(
-            XrayClient(
-                id=id, email=email,
-                flow=flow, valid_till=valid_till,
-                level=level, aead=aead, password=password)
-            )
+                XrayClient(
+                    id=id, email=email,
+                    flow=flow, valid_till=valid_till,
+                    level=level, aead=aead, password=password)
+                )
         else:
             self.clients.append(
                 XrayClient(

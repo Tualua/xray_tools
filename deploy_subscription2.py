@@ -18,6 +18,8 @@ SR_VLESS_XTLS_URL2 = "vless://{b64}?remarks={remarks}&obfs=none&tls=1&xtls=1"
 SR_VMESS_WS_URL1 = "auto:{id}@{server}:{port}"
 SR_VMESS_WS_URL2 = "vmess://{b64}?remarks={remarks}&path={path}&obfs={obfs}" \
     "&peer={peer}&tls=1&alterid=0"
+SR_SUBS_URL = "https://{}/{}/rocket.txt"
+V2RAYN_SUBS_URL = "https://{}/{}/v2rayn.txt"
 
 
 class XrayClientUrl(object):
@@ -248,13 +250,22 @@ for user in users:
             sftp_file.write(v2rayn_urls_b64)
             sftp_file.close()
 
-            qr = pyqrcode.create(sr_urls_b64, error='H')
+            user_sr_subs_url = SR_SUBS_URL.format(
+                subs_server["hostname"], user["id"])
+            user_sr_subs_url_b64 = base64.b64encode(
+                user_sr_subs_url.encode('ascii')).decode('ascii')
+            qr = pyqrcode.create(user_sr_subs_url_b64, error='H')
             qr.png(
                     "{}/SR-{}.png".format(
                         "qrcodes", user["email"]),
                     scale=5
             )
-            qr = pyqrcode.create(v2rayn_urls_b64, error='H')
+
+            user_v2rayn_subs_url = V2RAYN_SUBS_URL.format(
+                subs_server["hostname"], user["id"])
+            user_v2rayn_subs_url_b64 = base64.b64encode(
+                user_v2rayn_subs_url.encode('ascii')).decode('ascii')
+            qr = pyqrcode.create(user_v2rayn_subs_url_b64, error='H')
             qr.png(
                     "{}/V2RAYN-{}.png".format(
                         "qrcodes", user["email"]),

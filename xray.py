@@ -37,8 +37,10 @@ class XrayAlpn(Enum):
 
 class XrayFallback:
     dest: int
+    alpn: list[XrayAlpn]
 
-    def __init__(self, dest: int, path: str = "", xver: int = 1):
+    def __init__(self, dest: int, path: str = "", xver: int = 1,
+                 alpn: list[XrayAlpn] = []):
         self.dest = dest
 
         if path:
@@ -46,6 +48,9 @@ class XrayFallback:
 
         if xver > 0:
             self.xver = xver
+
+        if len(alpn) > 0:
+            self.alpn = alpn
 
 
 class XrayCertificate:

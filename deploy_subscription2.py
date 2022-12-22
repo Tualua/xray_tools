@@ -18,7 +18,9 @@ SR_VLESS_XTLS_URL2 = "vless://{b64}?remarks={remarks}&obfs=none&tls=1&xtls=1"
 SR_VMESS_WS_URL1 = "auto:{id}@{server}:{port}"
 SR_VMESS_WS_URL2 = "vmess://{b64}?remarks={remarks}&path={path}&obfs={obfs}" \
     "&peer={peer}&tls=1&alterid=0"
-SR_SUBS_URL = "https://{}/{}/rocket.txt"
+SR_SUBS_URL1 = "https://{}/{}/rocket.txt"
+SR_SUBS_URL2 = "sub://{b64}/?udp=1#CET"
+
 V2RAYN_SUBS_URL = "https://{}/{}/v2rayn.txt"
 
 
@@ -246,11 +248,12 @@ else:
         sftp_file.write(v2rayn_urls_b64)
         sftp_file.close()
 
-        user_sr_subs_url = SR_SUBS_URL.format(
+        user_sr_subs_url = SR_SUBS_URL1.format(
             subs_server["hostname"], user["id"])
         user_sr_subs_url_b64 = base64.b64encode(
             user_sr_subs_url.encode('ascii')).decode('ascii')
-        qr = pyqrcode.create(user_sr_subs_url_b64, error='H')
+        qr = pyqrcode.create(
+            SR_SUBS_URL2.format(b64=user_sr_subs_url_b64), error='H')
         qr.png(
                 "{}/SR-{}.png".format(
                     "qrcodes", user["email"]),

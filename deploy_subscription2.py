@@ -180,100 +180,96 @@ subs_server = get_subs_server("sub.yaml")
 servers = get_servers("servers_ansible.yaml")
 users = get_users("users.json")
 
-for user in users:
-    sr_urls = []
-    v2rayn_urls = []
-
-    ssh_client = paramiko.SSHClient()
-    pkey = paramiko.agent.Agent().get_keys()[0]
-    if subs_server["port"] != 22:
-        hostname = "[{}]:{}".format(
-            subs_server["hostname"], subs_server["port"])
-    else:
-        hostname = subs_server["hostname"]
-    hostkey = paramiko.ECDSAKey(
-        data=base64.decodebytes(subs_server["hostkey"].encode('ascii')))
-    ssh_client.get_host_keys().add(
+ssh_client = paramiko.SSHClient()
+pkey = paramiko.agent.Agent().get_keys()[0]
+if subs_server["port"] != 22:
+    hostname = "[{}]:{}".format(
+        subs_server["hostname"], subs_server["port"])
+else:
+    hostname = subs_server["hostname"]
+hostkey = paramiko.ECDSAKey(
+    data=base64.decodebytes(subs_server["hostkey"].encode('ascii')))
+ssh_client.get_host_keys().add(
+    hostname=subs_server["hostname"],
+    keytype="ssh-rsa",
+    key=hostkey
+)
+try:
+    ssh_client.connect(
         hostname=subs_server["hostname"],
-        keytype="ssh-rsa",
-        key=hostkey
-    )
-    try:
-        ssh_client.connect(
-            hostname=subs_server["hostname"],
-            port=subs_server["port"],
-            username="root",
-            pkey=pkey)
-    except Exception as e:
-        deploy_failed = True
-        print(e)
-    else:
-        print("Connected: ", hostname)
-        sftp_client = ssh_client.open_sftp()
-        for user in users:
-            sr_urls = []
-            v2rayn_urls = []
-            subs_usr_dir = os.path.join(subs_server["path"], user["id"])
-            try:
-                sftp_client.stat(subs_usr_dir)
-            except IOError:
-                print(f"Create {subs_usr_dir}")
-                sftp_client.mkdir(subs_usr_dir, 493)
-            subs_sr_path = os.path.join(
-                subs_server["path"], user["id"], "rocket.txt")
-            subs_v2rayn_path = os.path.join(
-                subs_server["path"], user["id"], "v2rayn.txt")
-            for server in servers:
-                client_url = XrayClientUrl(user, {server: servers[server]})
-                sr_urls.extend(client_url.get_sr_urls())
-                v2rayn_urls.extend(client_url.get_v2rayn_urls())
-                sr_urls_b64 = base64.b64encode(
-                    "\n".join(sr_urls).encode('ascii')).decode('ascii')
-                v2rayn_urls_b64 = base64.b64encode(
-                    "\n".join(v2rayn_urls).encode('ascii')).decode('ascii')
+        port=subs_server["port"],
+        username="root",
+        pkey=pkey)
+except Exception as e:
+    deploy_failed = True
+    print(e)
+else:
+    print("Connected: ", hostname)
+    sftp_client = ssh_client.open_sftp()
+    for user in users:
+        sr_urls = []
+        v2rayn_urls = []
+        subs_usr_dir = os.path.join(subs_server["path"], user["id"])
+        try:
+            sftp_client.stat(subs_usr_dir)
+        except IOError:
+            print(f"Create {subs_usr_dir}")
+            sftp_client.mkdir(subs_usr_dir, 493)
+        subs_sr_path = os.path.join(
+            subs_server["path"], user["id"], "rocket.txt")
+        subs_v2rayn_path = os.path.join(
+            subs_server["path"], user["id"], "v2rayn.txt")
+        for server in servers:
+            client_url = XrayClientUrl(user, {server: servers[server]})
+            sr_urls.extend(client_url.get_sr_urls())
+            v2rayn_urls.extend(client_url.get_v2rayn_urls())
+            sr_urls_b64 = base64.b64encode(
+                "\n".join(sr_urls).encode('ascii')).decode('ascii')
+            v2rayn_urls_b64 = base64.b64encode(
+                "\n".join(v2rayn_urls).encode('ascii')).decode('ascii')
 
-            print(f"Writing {subs_sr_path}")
-            sftp_file = sftp_client.file(
-                subs_sr_path,
-                "w",
-                -1
-            )
-            sftp_file.write(sr_urls_b64)
-            sftp_file.close()
+        print(f"Writing {subs_sr_path}")
+        sftp_file = sftp_client.file(
+            subs_sr_path,
+            "w",
+            -1
+        )
+        sftp_file.write(sr_urls_b64)
+        sftp_file.close()
 
-            print(f"Writing {subs_v2rayn_path}")
-            sftp_file = sftp_client.file(
-                subs_v2rayn_path,
-                "w",
-                -1
-            )
-            sftp_file.write(v2rayn_urls_b64)
-            sftp_file.close()
+        print(f"Writing {subs_v2rayn_path}")
+        sftp_file = sftp_client.file(
+            subs_v2rayn_path,
+            "w",
+            -1
+        )
+        sftp_file.write(v2rayn_urls_b64)
+        sftp_file.close()
 
-            user_sr_subs_url = SR_SUBS_URL.format(
-                subs_server["hostname"], user["id"])
-            user_sr_subs_url_b64 = base64.b64encode(
-                user_sr_subs_url.encode('ascii')).decode('ascii')
-            qr = pyqrcode.create(user_sr_subs_url_b64, error='H')
-            qr.png(
-                    "{}/SR-{}.png".format(
-                        "qrcodes", user["email"]),
-                    scale=5
-            )
+        user_sr_subs_url = SR_SUBS_URL.format(
+            subs_server["hostname"], user["id"])
+        user_sr_subs_url_b64 = base64.b64encode(
+            user_sr_subs_url.encode('ascii')).decode('ascii')
+        qr = pyqrcode.create(user_sr_subs_url_b64, error='H')
+        qr.png(
+                "{}/SR-{}.png".format(
+                    "qrcodes", user["email"]),
+                scale=5
+        )
 
-            user_v2rayn_subs_url = V2RAYN_SUBS_URL.format(
-                subs_server["hostname"], user["id"])
-            user_v2rayn_subs_url_b64 = base64.b64encode(
-                user_v2rayn_subs_url.encode('ascii')).decode('ascii')
-            qr = pyqrcode.create(user_v2rayn_subs_url_b64, error='H')
-            qr.png(
-                    "{}/V2RAYN-{}.png".format(
-                        "qrcodes", user["email"]),
-                    scale=5
-            )
-        sftp_client.close()
-    finally:
-        ssh_client.close()
+        user_v2rayn_subs_url = V2RAYN_SUBS_URL.format(
+            subs_server["hostname"], user["id"])
+        user_v2rayn_subs_url_b64 = base64.b64encode(
+            user_v2rayn_subs_url.encode('ascii')).decode('ascii')
+        qr = pyqrcode.create(user_v2rayn_subs_url_b64, error='H')
+        qr.png(
+                "{}/V2RAYN-{}.png".format(
+                    "qrcodes", user["email"]),
+                scale=5
+        )
+    sftp_client.close()
+finally:
+    ssh_client.close()
 
 if deploy_failed:
     sys.exit(1)

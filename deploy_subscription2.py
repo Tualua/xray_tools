@@ -255,7 +255,7 @@ else:
         qr = pyqrcode.create(
             SR_SUBS_URL2.format(b64=user_sr_subs_url_b64), error='H')
         qr.png(
-                "{}/SR-{}.png".format(
+                "{}/{}-Shadowrocket.png".format(
                     "qrcodes", user["email"]),
                 scale=5
         )
@@ -266,10 +266,13 @@ else:
             user_v2rayn_subs_url.encode('ascii')).decode('ascii')
         qr = pyqrcode.create(user_v2rayn_subs_url_b64, error='H')
         qr.png(
-                "{}/V2RAYN-{}.png".format(
+                "{}/{}-v2rayNG.png".format(
                     "qrcodes", user["email"]),
                 scale=5
         )
+        v2rayn_links_file = open("{}/{}-v2rayN.txt", "w")
+        v2rayn_links_file.write(user_v2rayn_subs_url)
+        v2rayn_links_file.close()
     sftp_client.close()
 finally:
     ssh_client.close()

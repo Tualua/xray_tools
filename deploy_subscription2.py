@@ -270,7 +270,8 @@ else:
                     "qrcodes", user["email"]),
                 scale=5
         )
-        v2rayn_links_file = open("{}/{}-v2rayN.txt", "w")
+        v2rayn_links_file = open(
+            "{}/{}-v2rayN.txt".format("qrcodes", user["email"]), "w")
         v2rayn_links_file.write(user_v2rayn_subs_url)
         v2rayn_links_file.close()
     sftp_client.close()

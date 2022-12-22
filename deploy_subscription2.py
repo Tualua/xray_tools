@@ -21,7 +21,7 @@ SR_VMESS_WS_URL2 = "vmess://{b64}?remarks={remarks}&path={path}&obfs={obfs}" \
 SR_SUBS_URL1 = "https://{}/{}/rocket.txt"
 SR_SUBS_URL2 = "sub://{b64}/?udp=1#CET"
 
-V2RAYN_SUBS_URL = "https://{}/{}/v2rayn.txt"
+V2RAYN_SUBS_URL = "https://{}/{}/v2rayn.txt#CET"
 
 
 class XrayClientUrl(object):

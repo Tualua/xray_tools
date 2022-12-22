@@ -33,14 +33,15 @@ class XraySecurity(Enum):
 class XrayAlpn(Enum):
     HTTP11 = "http/1.1"
     H2 = "h2"
+    NONE = ""
 
 
 class XrayFallback:
     dest: int
-    alpn: list[XrayAlpn]
+    alpn: XrayAlpn
 
     def __init__(self, dest: int, path: str = "", xver: int = 1,
-                 alpn: list[XrayAlpn] = []):
+                 alpn: XrayAlpn = XrayAlpn.NONE):
         self.dest = dest
 
         if path:
@@ -49,7 +50,7 @@ class XrayFallback:
         if xver > 0:
             self.xver = xver
 
-        if len(alpn) > 0:
+        if alpn != XrayAlpn.NONE:
             self.alpn = alpn
 
 

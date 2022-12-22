@@ -56,8 +56,8 @@ def main(args):
                 )]
             ),
             fallbacks=[
-                X.XrayFallback(dest=80, xver=0, alpn=[X.XrayAlpn.HTTP11]),
-                X.XrayFallback(dest=81, xver=0, alpn=[X.XrayAlpn.H2]),
+                X.XrayFallback(dest=80, xver=0, alpn=X.XrayAlpn.HTTP11),
+                X.XrayFallback(dest=81, xver=0, alpn=X.XrayAlpn.H2),
                 X.XrayFallback(dest=1234, path="/ray"),
                 X.XrayFallback(dest=2345, path="/rayless")
             ]

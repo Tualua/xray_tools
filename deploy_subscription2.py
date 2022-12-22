@@ -69,7 +69,7 @@ class XrayClientUrl(object):
                 id=self.id, server=self.server, port=self.vmess_port
             ).encode('ascii')
         ).decode('ascii').replace('=', '')
-        remarks = quote(self.description+" VLESS WS", safe='')
+        remarks = quote(self.description+" VLESS XTLS", safe='')
         url = SR_VLESS_XTLS_URL2.format(
             b64=b64_data, remarks=remarks
         )
@@ -80,7 +80,7 @@ class XrayClientUrl(object):
                 id=self.id, server=self.server, port=self.vmess_port
             ).encode('ascii')
         ).decode('ascii').replace('=', '')
-        remarks = quote(self.description+" VLESS WS", safe='')
+        remarks = quote(self.description+" VMESS WS", safe='')
         url = SR_VMESS_WS_URL2.format(
             b64=b64_data, remarks=remarks, path="/ray", obfs="websocket",
             peer=self.server

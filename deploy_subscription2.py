@@ -186,19 +186,19 @@ ssh_client = paramiko.SSHClient()
 pkey = paramiko.agent.Agent().get_keys()[0]
 if subs_server["port"] != 22:
     hostname = "[{}]:{}".format(
-        subs_server["hostname"], subs_server["port"])
+        subs_server["deploy_hostname"], subs_server["port"])
 else:
-    hostname = subs_server["hostname"]
+    hostname = subs_server["deploy_hostname"]
 hostkey = paramiko.ECDSAKey(
     data=base64.decodebytes(subs_server["hostkey"].encode('ascii')))
 ssh_client.get_host_keys().add(
-    hostname=subs_server["hostname"],
+    hostname=subs_server["deploy_hostname"],
     keytype="ssh-rsa",
     key=hostkey
 )
 try:
     ssh_client.connect(
-        hostname=subs_server["hostname"],
+        hostname=subs_server["deploy_hostname"],
         port=subs_server["port"],
         username="root",
         pkey=pkey)

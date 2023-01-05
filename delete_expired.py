@@ -31,7 +31,7 @@ def main(args):
         systemd1 = sysbus.get_object(
             'org.freedesktop.systemd1', '/org/freedesktop/systemd1')
         manager = dbus.Interface(systemd1, 'org.freedesktop.systemd1.Manager')
-        _ = manager.RestartUnit(args.service, 'fail')
+        _ = manager.RestartUnit(f'{args.service}.service', 'fail')
 
     else:
         print("No expired users found")

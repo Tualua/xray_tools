@@ -1,9 +1,9 @@
 import yaml
 import json
 import base64
-# import paramiko
+import paramiko
 import os
-# import sys
+import sys
 import pyqrcode
 from pyxray import url
 from pyxray.enums import (

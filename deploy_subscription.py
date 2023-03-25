@@ -89,9 +89,9 @@ else:
             subs_server["path"], user["id"], "v2rayn.txt")
         for server in servers:
             client_url = url.XrayClientUrl(user, {server: servers[server]})
-            sr_urls.extend(
+            sr_urls.append(
                 client_url.get_url(type=ClientType.SR, proto=XrayProtocol.VLESS))
-            v2rayn_urls.extend(
+            v2rayn_urls.append(
                 client_url.get_url(type=ClientType.V2RN, proto=XrayProtocol.VLESS))
             sr_urls_b64 = base64.b64encode(
                 "\n".join(sr_urls).encode('ascii')).decode('ascii')

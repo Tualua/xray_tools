@@ -38,13 +38,13 @@ class XrayClientUrl(object):
         remarks = quote(self.description+" VLESS WS", safe="")
 
         if type == ClientType.V2RN:
-            client_url = f"""\
-                {client_url}{self.id}@{self.server}:{self.main_port}?\
-                encryption=none&security=tls&\
-                sni={self.server}&alpn={client_alpn}&\
-                type=ws&path={ws_path}\
-                #{remarks}
-            """
+            client_url = (
+                f"{client_url}{self.id}@{self.server}:{self.main_port}?"
+                "encryption=none&security=tls&"
+                f"sni={self.server}&alpn={client_alpn}&"
+                f"type=ws&path={ws_path}"
+                f"#{remarks}"
+            )
         elif type == ClientType.SR:
             b64_data = base64.b64encode(
                 SR_VLESS_WS_URL1.format(

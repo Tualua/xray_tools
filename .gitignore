@@ -130,4 +130,5 @@ dmypy.json
 .vscode/
 *.json
 *.yaml
+test*.py
 qrcodes/

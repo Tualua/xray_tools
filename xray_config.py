@@ -1,5 +1,8 @@
 import argparse
-import xray as X
+import pyxray.config as X
+import pyxray.proto as proto
+import pyxray.enums as enums
+import pyxray.cert as cert
 import jsonpickle
 import json
 import yaml
@@ -34,21 +37,20 @@ def main(args):
     servers = get_servers("servers_ansible.yaml")
     for server in servers:
         config = X.XrayConfig(
-            log=X.XrayLog(
-                loglevel=X.XrayLogLevel.Warning,
-                path_accesslog="/var/log/xray/access.log",
-                path_errorlog="/var/log/xray/error.log"
-            )
+                logging=True,
+                log_access="/var/log/xray/access.log",
+                log_error="/var/log/xray/error.log"
         )
         # Main TCP-XTLS
         config.add_inbound(
-            port=servers[server]["vmess_port"],
+            tag="Vless-TCP-XTLS",
+            port=servers[server]["main_port"],
             protocol=X.XrayProtocol.VLESS,
             network=X.XrayNetwork.TCP,
-            security=X.XraySecurity.XTLS,
-            settings=X.XrayXtlsSettings(
-                alpn=[X.XrayAlpn.H2, X.XrayAlpn.HTTP11],
-                certificates=[X.XrayCertificate(
+            security=X.XraySecurity.TLS,
+            settings=proto.XrayTlsSettings(
+                alpn=[enums.XrayAlpn.H2, enums.XrayAlpn.HTTP11],
+                certificates=[cert.XrayCertificate(
                     "/etc/letsencrypt/live/{}/fullchain.pem".format(
                         server),
                     "/etc/letsencrypt/live/{}/privkey.pem".format(
@@ -56,55 +58,68 @@ def main(args):
                 )]
             ),
             fallbacks=[
-                X.XrayFallback(dest=80, xver=0, alpn=X.XrayAlpn.HTTP11),
-                X.XrayFallback(dest=81, xver=0, alpn=X.XrayAlpn.H2),
-                X.XrayFallback(dest=1234, path="/ray"),
-                X.XrayFallback(dest=2345, path="/rayless")
+                X.XrayFallback(
+                    name=f"trh2-{server}",
+                    alpn=enums.XrayAlpn.H2, dest="@trojan-h2"),
+                X.XrayFallback(
+                    name=f"vlh2-{server}",
+                    alpn=enums.XrayAlpn.H2, dest="@vless-h2"),
+                X.XrayFallback(path="/rayless", dest="@vless-ws", xver=2),
+                X.XrayFallback(path="/ray", dest="@vmess-ws", xver=2),
+                X.XrayFallback(
+                    alpn=enums.XrayAlpn.H2, dest="@trojan-tcp", xver=2),
+                X.XrayFallback(dest="/dev/shm/h1.sock", xver=2),
             ]
         )
         # Vmess Websocket Fallback
         config.add_inbound(
-            port=1234,
             protocol=X.XrayProtocol.VMESS,
             network=X.XrayNetwork.WS,
             security=X.XraySecurity.NONE,
-            settings=X.XrayWsSettings(
+            settings=proto.XrayWsSettings(
                 accept_proxy_protocol=True,
                 path="/ray"
             ),
-            listen="127.0.0.1"
+            listen="@vmess-ws"
         )
         # VLESS Websocket Fallback
         config.add_inbound(
-            port=2345,
+            listen="@vless-ws",
             protocol=X.XrayProtocol.VLESS,
             network=X.XrayNetwork.WS,
             security=X.XraySecurity.NONE,
-            settings=X.XrayWsSettings(
+            settings=proto.XrayWsSettings(
                 accept_proxy_protocol=True,
                 path="/rayless"
             ),
-            listen="127.0.0.1"
         )
-        # Trojan
+        # VLESS HTTP/2 Fallback
         config.add_inbound(
-            port=servers[server]["trojan_port"],
+            listen="@vless-h2",
+            protocol=X.XrayProtocol.VLESS,
+            network=X.XrayNetwork.H2,
+            security=X.XraySecurity.NONE,
+            settings=proto.XrayHttpSettings(
+                path="/vlh2"
+            ),
+        )
+        # Trojan HTTP/2 Fallback
+        config.add_inbound(
+            listen="@trojan-h2",
+            protocol=X.XrayProtocol.TROJAN,
+            network=X.XrayNetwork.H2,
+            security=X.XraySecurity.NONE,
+            settings=proto.XrayHttpSettings(path="/trjh2"),
+        )
+        # Trojan TCP Fallback
+        config.add_inbound(
+            listen="@trojan-tcp",
             protocol=X.XrayProtocol.TROJAN,
             network=X.XrayNetwork.TCP,
-            security=X.XraySecurity.XTLS,
-            settings=X.XrayXtlsSettings(
-                alpn=[X.XrayAlpn.H2, X.XrayAlpn.HTTP11],
-                certificates=[X.XrayCertificate(
-                    "/etc/letsencrypt/live/{}/fullchain.pem".format(
-                        server),
-                    "/etc/letsencrypt/live/{}/privkey.pem".format(
-                        server)
-                )]
-            ),
+            security=X.XraySecurity.NONE,
+            settings=proto.XrayTcpSettings(accept_proxy_protocol=True),
             fallbacks=[
-                X.XrayFallback(dest=80, xver=0),
-                X.XrayFallback(dest=1234, path="/ray"),
-                X.XrayFallback(dest=2345, path="/rayless")
+                X.XrayFallback(dest="/dev/shm/h2c.sock", xver=2),
             ]
         )
         config.add_outbound(X.XrayProtocol.FREEDOM)
